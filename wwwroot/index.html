@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live .NET SSE Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .status { color: green; font-weight: bold; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #f4f4f4; margin: 5px 0; padding: 10px; border-left: 4px solid #0078d4; }
+    </style>
+</head>
+<body>
+
+    <h2>Live Stock Ticker (SSE + .NET)</h2>
+    <p>Connection Status: <span id="status" class="status">Connecting...</span></p>
+    <ul id="feed"></ul>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const feedEl = document.getElementById('feed');
+
+        // 1. Open the persistent SSE connection to the .NET endpoint
+        const eventSource = new EventSource('/stream-prices');
+
+        // 2. Runs when the connection opens
+        eventSource.onopen = () => {
+            statusEl.textContent = "Connected (Listening for updates...)";
+        };
+
+        // 3. Runs every time .NET flushes a new "data: ..." line
+        eventSource.onmessage = (event) => {
+            // Parse the JSON string sent by C#
+            const stock = JSON.parse(event.data);
+
+            // Add it to the top of the list on the screen
+            const item = document.createElement('li');
+            item.textContent = `[${stock.Timestamp}] ${stock.Symbol}: $${stock.Price}`;
+            feedEl.prepend(item);
+        };
+
+        // 4. Runs if the server stops or network drops
+        eventSource.onerror = () => {
+            statusEl.textContent = "Disconnected. Browser is trying to reconnect...";
+            statusEl.style.color = "red";
+        };
+    </script>
+
+</body>
+</html>
